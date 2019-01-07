@@ -1,0 +1,66 @@
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+nav .brand-logo {
+    padding-left: 20px !important;
+}
+
+.pagination {
+    margin-top: 20px;
+}
+
+.pagination li.active {
+    background-color: #4527a0 !important;
+}
+
+.app-color {
+    background-color: #2d88a5 !important;
+}
+
+footer {
+    padding-top: 0px !important;
+}
+
+.waiting {
+    box-sizing: border-box;
+    background-color: rgb(33, 37, 41);
+    display: block;
+    opacity: 0.7;
+    outline-color: rgb(33, 37, 41);
+    outline-style: none;
+    outline-width: 0px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: fixed;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
+
+    transition-delay: 0s;
+    transition-duration: 0.15s;
+    transition-property: opacity;
+    transition-timing-function: linear;
+    width: 1853px;
+    z-index: 5000;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+.collapsible .active .collapsible-header {
+    background-color: #cecece !important;
+}
+
+[v-cloak] {
+    display: none;
+}
+
+pre {
+    white-space:pre-wrap;
+}

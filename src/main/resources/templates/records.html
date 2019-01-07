@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lajus KM | Topics</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <link rel="stylesheet" href="/css/main.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="/img/kafka-logo.png">
+</head>
+<body>
+
+<header id="header" v-cloak>
+    <nav-bar-app active="topic"></nav-bar-app>
+</header>
+
+<main id="app" v-cloak>
+
+    <waiting v-if="waiting"></waiting>
+
+    <div class="container">
+        <h1>Records of: {{ topic.name }}</h1>
+
+        <div class="row" v-if="numRecords > 0">
+
+            <div class="col m8">
+                <div class="input-field col s8">
+                    <input type="text" id="filter" v-model="filter">
+                    <label for="filter">Filter by record key or value content</label>
+                </div>
+                <div class="col s2">
+                    <a class="waves-effect waves-light btn deep-purple darken-3" v-on:click="filterRecords" style="margin-top: 20px"><i class="material-icons left">search</i>Filter</a>
+                </div>
+                <div class="col s2">
+                    <a class="waves-effect waves-light btn deep-purple darken-3" v-on:click="eraseFilter" style="margin-top: 20px">Clear</a>
+                </div>
+            </div>
+
+            <div class="col m8 s12"  v-if="records.length > 0">
+                <ul class="pagination center" v-if="maxPages > 1">
+                    <li class="waves-effect" v-if="hasToShowFirstPage"><a v-on:click="goToFirstPage">1</a></li>
+                    <li class="disabled" v-if="hasMorePreviousPages">...</li>
+                    <li class="waves-effect" v-if="has2PreviousPages"><a v-on:click="goTo2PreviousPage">{{ page - 1 }}</a></li>
+                    <li class="waves-effect" v-if="hasPreviousPage"><a v-on:click="goToPreviousPage">{{ page }}</a></li>
+                    <li class="active"><a> {{ page + 1 }}</a></li>
+                    <li class="waves-effect" v-if="hasNextPage"><a v-on:click="goToNextPage">{{ page + 2 }}</a></li>
+                    <li class="waves-effect" v-if="has2NextPages"><a v-on:click="goTo2NextPage">{{ page + 3 }}</a></li>
+                    <li class="disabled" v-if="hasMoreNextPages">...</li>
+                    <li class="waves-effect" v-if="hasToShowLastPage"><a v-on:click="goToLastPage">{{ maxPages }}</a></li>
+                </ul>
+                <ul class="collapsible">
+                    <li v-for="(record, index) in records">
+                        <div class="collapsible-header">
+                            <span class="truncate"><span v-if="record.key"><strong>{{ record.key }}</strong> - </span>{{ record.value }}</span>
+                        </div>
+                        <div class="collapsible-body">
+                            <strong v-if="record.key">Key:</strong>
+                            <pre v-if="record.key">{{ record.key }}</pre>
+                            <strong>Value:</strong>
+                            <pre>{{ record.value }}</pre>
+                            <hr>
+                            <span>Offset: <strong>{{ record.offset }}</strong></span><br>
+                            <span>Partition: <strong>{{ record.partition }}</strong></span><br>
+                            <span>Timestamp: <strong>{{ record.date }}</strong></span><br>
+                            <br>
+                            <a class="waves-effect waves-light btn green darken-4" :href="'data:text;charset=utf-8,' + record.value" download="record.txt"><i class="material-icons left">file_download</i>Download record</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col m8 s12" v-else>
+                <h4>No records founds</h4>
+            </div>
+
+            <div class="col m4 s12">
+
+                <div class="card deep-purple darken-3" v-if="selectedFilter != ''" style="margin-bottom: 30px;">
+                    <div class="card-content white-text">
+                        <span class="card-title">{{ currentRecords }} filtered records from {{ numRecords }}</span>
+                        <span>Filter query: <strong>{{ selectedFilter }}</strong></span><br>
+                    </div>
+                </div>
+
+                <a class="waves-effect waves-light btn-large amber darken-4" style="width: 100%;" v-on:click="updateRecords"><i class="material-icons left">sync</i>Update records</a>
+
+                <br><br>
+
+                <div class="card blue-grey darken-4" v-if="numRecords > 0">
+                    <div class="card-content white-text">
+                        <span class="card-title">Total records: {{ numRecords }}</span>
+                        <span>Bootstrap server: <strong>{{ topic.bootstrap }}</strong></span><br>
+                        <span>Key serializer: <strong v-if="topic.keySerializer == 0">String/JSON/Byte</strong><strong v-else>Avro</strong></span><br>
+                        <span>Value serializer: <strong v-if="topic.valueSerializer == 0">String/JSON/Byte</strong><strong v-else>Avro</strong></span><br>
+                        <div v-if="topic.schemaRegistry"><span>Schema registry: <strong>{{ topic.schemaRegistry }}</strong></span><br></div>
+                        <span>Register date: <strong>{{ topic.date }}</strong></span>
+                    </div>
+                </div>
+
+            </div>
+
+
+        </div>
+
+        <div class="row" v-else>
+            <h4>No records yet</h4>
+            <br>
+            <br>
+            <a class="waves-effect waves-light btn-large amber darken-4" v-on:click="updateRecords"><i class="material-icons left">sync</i>Update records</a>
+        </div>
+
+    </div>
+
+</main>
+
+<footer class="page-footer app-color" id="footer" v-cloak>
+    <footer-app></footer-app>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<script src="/js/components/waiting.js"></script>
+<script src="/js/components/nav-bar-app.js"></script>
+<script src="/js/components/footer-app.js"></script>
+
+<script src="/js/records.js"></script>
+<script src="/js/header.js"></script>
+<script src="/js/footer.js"></script>
+
+</body>
+</html>

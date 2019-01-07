@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lajus KM | Connectors</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <link rel="stylesheet" href="/css/main.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="/img/kafka-logo.png">
+</head>
+<body>
+
+<header id="header" v-cloak>
+    <nav-bar-app active="connectors"></nav-bar-app>
+</header>
+
+<main id="app" v-cloak>
+
+    <waiting v-if="waiting"></waiting>
+
+    <div class="container">
+        <h1>Connectors</h1>
+
+        <div class="row" v-if="connectors.length > 0">
+
+            <div class="col m8">
+                <div class="input-field col s12">
+                    <i class="material-icons prefix">textsms</i>
+                    <input type="text" id="filter" v-model="filter">
+                    <label for="filter">Filter by connector name</label>
+                </div>
+            </div>
+
+            <div class="col m8 s12"  v-if="filteredConnectors.length > 0">
+                <ul class="collapsible">
+                    <li v-for="(connector, index) in filteredConnectors">
+                        <div class="collapsible-header">
+                            <strong>{{ connector.name }}</strong>
+                            <span class="new badge green" data-badge-caption="UP" v-if="connector.status == UP"></span>
+                            <span class="new badge grey" data-badge-caption="IDLE" v-if="connector.status == IDLE"></span>
+                            <span class="new badge orange" data-badge-caption="PAUSED" v-if="connector.status == PAUSED"></span>
+                            <span class="new badge red" data-badge-caption="DOWN" v-if="connector.status == DOWN"></span>
+                        </div>
+                        <div class="collapsible-body">
+                            <span>URL: <strong>{{ connector.url }}</strong></span><br>
+                            <span>Name: <strong>{{ connector.response.name }}</strong></span><br>
+                            <span>Type: <strong>{{ connector.response.type }}</strong></span><br>
+                            <span v-if="connector.response.connector">State: <strong>{{ connector.response.connector.state }}</strong></span><br>
+                            <span v-if="connector.response.connector">Worker id: <strong>{{ connector.response.connector.worker_id }}</strong></span><br>
+                            <hr>
+                            <h4>Tasks:</h4>
+                            <div v-for="task in connector.response.tasks">
+                                <span>Id: <strong>{{ task.id }}</strong></span><br>
+                                <span>State: <strong>{{ task.state }}</strong></span><br>
+                                <span>Worker id: <strong>{{ task.worker_id }}</strong></span><br>
+                                <br>
+                                <a class="waves-effect waves-light btn blue darken-3" v-on:click="restartTask(connector.id, task.id)">Restart task <i class="material-icons right">reply</i></a>
+                                <hr>
+                            </div>
+                            <div v-if="connector.showConfig">
+                                <h4>Config:</h4>
+                                <div v-for="(property, propertyIndex) in config">
+                                    <span v-if="!connector.showUpdate">{{ property.name }}: <strong>{{ property.value }}</strong></span>
+                                    <div v-else>
+                                        <span><strong>{{ property.name }}:</strong></span>
+                                        <table width="100%">
+                                            <tr style="border-bottom-width: 0px !important">
+                                                <td>
+                                                    <input type="text" v-model="property.value"><br>
+                                                </td>
+                                                <td width="20px"></td>
+                                                <td width="20%" valign="top">
+                                                    <a class="waves-effect waves-light btn grey" v-on:click="removeProperty(propertyIndex)"><i class="material-icons right" style="margin-right: 15px;">delete</i></a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <br>
+                                <div v-if="showNewConfig">
+                                    <hr>
+                                    <table width="100%">
+                                        <tr>
+                                            <td width="48%">
+                                                <div class="input-field">
+                                                    <input id="propertyName" type="text" v-model="newConfig.name">
+                                                    <label for="propertyName"><storng>Property name:</storng></label>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td width="48%">
+                                                <div class="input-field">
+                                                    <input id="propertyValue" type="text" v-model="newConfig.value">
+                                                    <label for="propertyValue"><strong>Property value:</strong></label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td>
+                                                <button type="button" class="btn btn-success btn-block" @click="addProperty">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <hr>
+                                    <br>
+                                </div>
+                                <a v-if="connector.showUpdate" class="waves-effect waves-light btn teal lighten-3" v-on:click="sendConfig(index)">Save config <i class="material-icons right">save</i></a>
+                                <a v-if="!connector.showUpdate" class="waves-effect waves-light btn teal darken-4" v-on:click="updateConfig(index)">Edit config <i class="material-icons right">create</i></a>
+                                <a v-if="!connector.showUpdate" class="waves-effect waves-light btn light-green darken-4" v-on:click="showNewConfig = true">Add param <i class="material-icons right">add</i></a>
+                                <a class="waves-effect waves-light btn grey right" v-on:click="hideProperties(index)">Hide config</a>
+                                <br>
+                            </div>
+                            <a v-if="!connector.showConfig" class="waves-effect waves-light btn grey" style="width:100%; margin-top: 20px;" v-on:click="showProperties(index)">Show config</a>
+                            <hr>
+                            <br>
+                            <a class="waves-effect waves-light btn blue darken-1" v-on:click="restart(connector.id)">Restart connector <i class="material-icons right">reply</i></a>
+                            <a class="waves-effect waves-light btn green" v-if="connector.status == PAUSED" v-on:click="resume(connector.id)">Resume connector <i class="material-icons right">play_for_work</i></a>
+                            <a class="waves-effect waves-light btn red" v-if="connector.status == UP" v-on:click="pause(connector.id)">Pause connector <i class="material-icons right">pause</i></a>
+                            <a class="waves-effect waves-light btn orange right" v-on:click="remove(connector.id)">Remove connector <i class="material-icons right">delete</i></a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col m8 s12" v-else>
+                <h4>No records founds</h4>
+            </div>
+
+            <div class="col m4 s12">
+                <div class="card blue-grey darken-4" v-if="connectors.length > 0">
+                    <div class="card-content white-text">
+                        <span class="card-title">Total connectors: {{ connectors.length }}</span>
+                        <p>Connectors UP: <strong>{{ connectorsUp }}</strong></p>
+                        <p>Connectors PAUSED: <strong>{{ connectorsPaused }}</strong></p>
+                        <p>Connectors IDLE: <strong>{{ connectorsIdle }}</strong></p>
+                        <p>Connectors DOWN: <strong>{{ connectorsDown }}</strong></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row" v-else>
+            <h4>No connectors yet</h4>
+        </div>
+
+        <div class="row" style="margin-top: 40px;">
+            <a class="waves-effect waves-light btn-large indigo darken-4" v-on:click="openModal">Add new connector <i class="material-icons right">add</i></a>
+        </div>
+
+        <div id="newConnectorModal" class="modal">
+            <div class="modal-content">
+                <h4>Add new connector</h4>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input id="newConnectorName" type="text" v-model="newConnector.name">
+                        <label for="newConnectorName">Name</label>
+                    </div>
+                    <div class="input-field col s12">
+                        <input id="newConnectorUrl" type="text" v-model="newConnector.url">
+                        <label for="newConnectorUrl">Bootstrap server</label>
+                    </div>
+                    <br>
+                    <div class="col s12" style="margin-top: 20px;">
+                        <a class="waves-effect waves-light btn-large indigo darken-4" v-on:click="addConnector">Add connector</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<footer class="page-footer app-color" id="footer" v-cloak>
+    <footer-app></footer-app>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<script src="/js/components/waiting.js"></script>
+<script src="/js/components/nav-bar-app.js"></script>
+<script src="/js/components/footer-app.js"></script>
+
+<script src="/js/connectors.js"></script>
+<script src="/js/header.js"></script>
+<script src="/js/footer.js"></script>
+
+</body>
+</html>
