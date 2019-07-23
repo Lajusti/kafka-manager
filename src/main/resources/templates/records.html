@@ -28,12 +28,12 @@
         <div class="row" v-if="numRecords > 0">
 
             <div class="col m8">
-                <div class="input-field col s8">
+                <div class="input-field col s7">
                     <input type="text" id="filter" v-model="filter">
                     <label for="filter">Filter by record key or value content</label>
                 </div>
-                <div class="col s2">
-                    <a class="waves-effect waves-light btn deep-purple darken-3" v-on:click="filterRecords" style="margin-top: 20px"><i class="material-icons left">search</i>Filter</a>
+                <div class="col s3">
+                    <a class="waves-effect waves-light btn deep-purple darken-3" v-on:click="filterRecords" style="margin-top: 20px; width: 100%;"><i class="material-icons left">search</i>Filter</a>
                 </div>
                 <div class="col s2">
                     <a class="waves-effect waves-light btn deep-purple darken-3" v-on:click="eraseFilter" style="margin-top: 20px">Clear</a>
